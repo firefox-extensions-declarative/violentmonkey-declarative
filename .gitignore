@@ -5,3 +5,5 @@ node_modules/
 /stats.json
 /tmp/
 .env
+.direnv/
+*.xpi
