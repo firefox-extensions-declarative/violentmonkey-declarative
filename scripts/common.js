@@ -1,7 +1,7 @@
 const childProcess = require('child_process');
 const path = require('path');
 
-const isProd = process.env.NODE_ENV === 'production';
+const isProd = false; //process.env.NODE_ENV === 'production';
 
 function exec(cmd) {
   try {
