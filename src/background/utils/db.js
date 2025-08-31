@@ -24,6 +24,7 @@ import storage, {
 import { storageCacheHas } from './storage-cache';
 import { reloadTabForScript } from './tabs';
 import { vetUrl } from './url';
+import { IS_FIREFOX } from '@/common/safe-globals';
 
 let maxScriptId = 0;
 let maxScriptPosition = 0;
@@ -190,6 +191,43 @@ addOwnCommands({
   }, 100);
   checkRemove();
   setInterval(checkRemove, TIMEOUT_24HOURS);
+  // declarative userscripts
+  if (IS_FIREFOX && typeof browser.storage.managed === 'object') {
+    try {
+      const managedSettings = await browser.storage.managed.get(null);
+      if (managedSettings?.options) {
+        const managedOptions = managedSettings.options;
+        for (const optionName in managedOptions) {
+          setOption(optionName, managedOptions[optionName]);
+        }
+      }
+      if (managedSettings?.scripts) {
+        const managedScripts = managedSettings.scripts;
+        for (const managedScript of managedScripts) {
+          let newId = 0;
+          const managedScriptMeta = parseMeta(managedScript);
+          const currentUserScripts = getScriptsByIdsOrAll();
+          const takenIds = currentUserScripts.map(script => script.props.id);
+          for (const script of currentUserScripts) {
+            if (script.meta.name === managedScriptMeta.name) {
+              newId = script.props.id;
+              break;
+            }
+            if (!takenIds.includes(script.props.id + 1)) {
+              newId = script.props.id + 1;
+              break;
+            }
+          }
+          parseScript({
+            id: newId,
+            code: managedScript,
+          });
+        }
+      }
+    } catch (err) {
+      console.error(`page.initSettings: ${err}`);
+    }
+  }
   resolveInit();
 })();
 
